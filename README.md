@@ -45,7 +45,7 @@ Medical-Image-Analyzer/
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/medical-image-analyzer.git
+git clone https://github.com/sourabhvamdevan/medical-image-analyzer.git
 cd medical-image-analyzer
 ```
 
