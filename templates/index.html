@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Image Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .animate-spin-custom {
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
+    <div class="container mx-auto px-4 py-8 max-w-3xl">
+        <!-- Theme Toggle Button -->
+        <div class="absolute top-4 right-4">
+            <button id="theme-toggle" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200">
+                <!-- Sun Icon -->
+                <svg id="light-icon" class="w-6 h-6 text-gray-800 dark:text-gray-200 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg>
+                <!-- Moon Icon -->
+                <svg id="dark-icon" class="w-6 h-6 text-gray-800 dark:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Main Card -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 transition-colors duration-200">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-bold text-gray-800 dark:text-white mb-2">Medical Image Analyzer</h1>
+                <p class="text-gray-600 dark:text-gray-400">Upload a medical image for instant analysis</p>
+            </div>
+
+            <!-- Upload Form -->
+            <form id="uploadForm" class="space-y-6" enctype="multipart/form-data">
+                <div class="space-y-4">
+                    <!-- File Input Section -->
+                    <div class="flex flex-col items-center justify-center w-full">
+                        <label for="fileInput" class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all duration-200">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                <svg class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                </svg>
+                                <p class="mb-2 text-sm text-gray-500 dark:text-gray-400"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, GIF up to 10MB</p>
+                            </div>
+                            <input type="file" id="fileInput" name="file" accept="image/*" class="hidden" required />
+                        </label>
+                        <div id="selected-file" class="mt-2 text-sm text-gray-600 dark:text-gray-400">No file chosen</div>
+                    </div>
+
+                    <!-- Upload Button -->
+                    <div class="flex justify-center">
+                        <button type="submit" id="submitBtn" disabled class="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-200">
+                            Upload and Analyze
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Loader -->
+            <div id="loader" class="hidden mt-8">
+                <div class="flex justify-center">
+                    <div class="animate-spin-custom rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
+                <p class="text-center mt-4 text-gray-600 dark:text-gray-400">Analyzing image...</p>
+            </div>
+
+            <!-- Results Section -->
+            <div id="result" class="hidden mt-8">
+                <div class="result-content p-4 rounded-lg"></div>
+            </div>
+
+            <!-- History Section -->
+            <div class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+                <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-4">Recent Predictions</h2>
+                <div id="predictions-list" class="space-y-4">
+                    <!-- Predictions will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        
+        const html = document.documentElement;
+        const themeToggle = document.getElementById('theme-toggle');
+        const lightIcon = document.getElementById('light-icon');
+        const darkIcon = document.getElementById('dark-icon');
+
+        
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            html.classList.add('dark');
+            lightIcon.classList.remove('hidden');
+            darkIcon.classList.add('hidden');
+        } else {
+            html.classList.remove('dark');
+            lightIcon.classList.add('hidden');
+            darkIcon.classList.remove('hidden');
+        }
+
+       
+        themeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            lightIcon.classList.toggle('hidden');
+            darkIcon.classList.toggle('hidden');
+            localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+        });
+
+        
+        const fileInput = document.getElementById('fileInput');
+        const selectedFile = document.getElementById('selected-file');
+        const submitBtn = document.getElementById('submitBtn');
+        const loader = document.getElementById('loader');
+        const result = document.getElementById('result');
+        const predictionsList = document.getElementById('predictions-list');
+
+       
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files[0];
+            if (file) {
+                selectedFile.textContent = file.name;
+                submitBtn.disabled = false;
+            } else {
+                selectedFile.textContent = 'No file chosen';
+                submitBtn.disabled = true;
+            }
+            result.classList.add('hidden');
+            result.querySelector('.result-content').textContent = '';
+        });
+
+        
+        async function loadPredictions() {
+            try {
+                const response = await fetch('/predictions');
+                const predictions = await response.json();
+                
+                predictionsList.innerHTML = predictions.reverse().slice(0, 5).map(pred => `
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 flex justify-between items-center transition-colors duration-200">
+                        <div>
+                            <p class="text-gray-800 dark:text-gray-200 font-medium">${pred.filename}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">${pred.timestamp}</p>
+                        </div>
+                        <span class="px-4 py-2 rounded-full text-sm font-semibold ${
+                            pred.prediction === 'Normal' 
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                        }">
+                            ${pred.prediction}
+                        </span>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading predictions:', error);
+            }
+        }
+
+       
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            submitBtn.disabled = true;
+            loader.classList.remove('hidden');
+            result.classList.add('hidden');
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                
+                result.classList.remove('hidden');
+                const resultContent = result.querySelector('.result-content');
+                resultContent.textContent = `Prediction: ${data.prediction}`;
+                resultContent.className = `result-content p-4 rounded-lg ${
+                    data.prediction === 'Normal'
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                    : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                }`;
+
+                
+                loadPredictions();
+            } catch (error) {
+                result.classList.remove('hidden');
+                const resultContent = result.querySelector('.result-content');
+                resultContent.textContent = 'Error analyzing image. Please try again.';
+                resultContent.className = 'result-content p-4 rounded-lg bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+            } finally {
+                loader.classList.add('hidden');
+                submitBtn.disabled = false;
+            }
+        });
+
+        
+        loadPredictions();
+    </script>
+</body>
+</html>
